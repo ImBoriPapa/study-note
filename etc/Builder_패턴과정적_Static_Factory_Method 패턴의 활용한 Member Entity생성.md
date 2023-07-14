@@ -1,4 +1,4 @@
-# Builder 패턴과 정적 Static Factory Method 패턴의 활용한 Member Entity 생성
+# Builder 패턴과 정적 Static Factory Method 패턴을 활용한 Member Entity 생성
 
 개인 프로젝트에서 회원 엔티티를 관리하기 위한 정보 약 15개의 필드로 구성된 엔티티를 만들고 회원가입은 이메일과 OAuth2 등록을 구분하는 코드의 필요.
 
@@ -64,7 +64,7 @@ public class Member {
 2. 회원 엔티티의 생성시 이메일 가입과 Oauth2 가입의 구분하기 위해 생성자의 오버로딩으로는 생성되는 객체의 구분이 어렵습니다.
 3. 생성자는 IDE의 도움이 없이는 같은 타입의 매개변수의 구분이 어려워 엉뚱한 값을 매개변수에 할당할 가능성이 있습니다.
 
-## 2. 사실수집: 
+## 2. 사실수집
 아래 테스트 코드를 작성함으로써 문제를 확인하였습니다.
 ```java
     @Test
@@ -114,15 +114,15 @@ public class Member {
     }
 ```
 
-## 3. 원인추론: 
+## 3. 원인추론
 1. 생성자를 이용해서 5개 이상의 필드를 매개변수로 할당할때 가독성 및 엉뚱한 값을 할당할 수가 있다.
 2. 생성자의 오버라이딩으로 생성하는 객체는 어떤 회원 객체를 반환하는지 구분이 힘들다.
 
-## 4. 조사방법 결정:
+## 4. 조사방법 결정
 - 생성자가 아닌 빌더패턴으로 가독성 항샹
 - 정적 팩토리 메서드 패턴을 사용해서 의미있는 메서드의 이름을 사용
 
-## 5. 조사방법 구현:
+## 5. 조사방법 구현
 1. 생성자를 Builder 패턴을 사용해서 어떤 변수에 어떤 값이 할당되는 것인지 개발자가 확인하기 쉽게 가독성을 보완했습니다.
 2. Static Factory Method 패턴을 사용해 의미있는 이름으로 개발자가 어떤 회원 엔티티가 생성되는지 구분하기 쉽게 보완했습니다.
 
@@ -241,7 +241,7 @@ public class Member {
 
 ```
 
-## 6. 결과 관찰:
+## 6. 결과 관찰
 문제를 보완해서 테스트 코드를 작성하였습니다.
 
     @Test
@@ -307,7 +307,7 @@ public class Member {
 7. 깃허브 위치
 - https://github.com/ImBoriPapa/bad-request/blob/main/src/main/java/com/study/badrequest/domain/member/Member.java
 
-참고:
+참고
 > CleanCode - Robert C. Martin : 2장 의미있는 이름
 
 > Effective Java 3/E Bloch, Joshua: 2장 객체 생성과 파괴 
