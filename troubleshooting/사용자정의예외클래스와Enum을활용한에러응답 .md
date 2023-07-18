@@ -262,10 +262,10 @@ class GlobalExceptionAdvisorTest {
         Mockito.when(request.getRequestURI()).thenReturn("/api/v2/posts");
         Mockito.when(request.getMethod()).thenReturn("PATCH");
         //when
-        ResponseEntity<ApiResponse.Error> responseEntity = globalExceptionAdvisor.handleException(request, customRuntimeException);
+        ResponseEntity<ApiResponse.Error> responseEntity = globalExceptionAdvisor.handleCustomRuntimeException(request, customRuntimeException);
         //then
         assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
-        
+
     }
 
 }
