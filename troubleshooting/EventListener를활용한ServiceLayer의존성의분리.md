@@ -1,13 +1,13 @@
-# EventListener를 활용한 의존성과 관심사의 분리
+# EventListener를 활용한 Service layer의 의존성과 관심사의 분리
 
 ## 1. 문제정의
-- 질문 게시글을 저장하는 아래 서비스레이어 코드와 같이 회원,질문,질문태그,해시태그,이미지의 영속성 레이어의 의존성을 가지고 있다.
-- 질문 게시글의 비즈니스 로직외에 다른 비즈니스 코드 또한 포함하고 있다.
-- 그래서 테스트하기 어려운 코드이다.
+- 질문 게시글을 생성,수정,삭제하는 서비스 계층에 너무 많은 기능과 의존성이 있어 테스트 작성이 복잡하다.
+- 질문 게시글의 생성 로직외에 다른 비즈니스 코드 또한 포함하고 있다.
+- 기능을 추가하거나 수정해야할때 기존의 로직을 파악하고 수정해야할 확률이 높다.
 
 ## 2. 사실수집
-- 질문글 생성 로직에 관심사가 너무많다: 해시태그 및 질문태그 또 이미지 처리 로직이 있어 테스트 작성이 어렵다.
-- 변경에 닫혀있고 확장에 열려있는 코드가 아니다 : 예를들어 활동기록을 저장하는 기능을 추가하기 위해서는 의존성을 추가하거나 수정해야할 확률이 높다. 
+-  아래 서비스레이어의 코드는 질문 영속 계층외에도 여러 다른 의존성을 포함하고 있습니다.
+-  질문 엔티티 생성 로직외에 해시태그, 질문태그, 이미지 기능에 비즈니스 코드 또한 포함되어있습니다.
 
 ```java
 @Service
@@ -56,7 +56,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 ```
 
-테스트 코드
+- 테스트 코드를 작성할 때 관련된 모든 로직을 설정하고 테스트해야해서 테스트 작성이 어렵습니다.
 ```java
 @ExtendWith(MockitoExtension.class)
 class CreateQuestionProcessingTest {
@@ -109,17 +109,16 @@ class CreateQuestionProcessingTest {
 ```
 
 ## 3. 원인추론
-- 의존성이 많아 Mocking 해야할 데이터가 많다.
-- 또한 의존하고 있는 기능이 달라질 경우 비즈니스 로직과 테스트코드가 변경할 확률이 높다.
+- 질문,태그,이미지 기능의 코드가 강하게 결합되어 있습니다.
 
 ## 4. 조사방법 결정
-- Spring의 EventListener을 활용해서 의존성과 관심사의 분리
+Spring의 EventListener을 활용해서 의존성과 관심사의 분리시키고 여러 기능을 각각의 서비스 레이로 분리 시켜 결합도를 낮추고 본연에 기능과 역활에 충실하도록 변경하도록 결정하였습니다.
 
 ## 5. 조사방법 구현
-
-- 의존성의 분리와 관심사의 분리
-- 이벤트 리스너를 활용하여 기능별 비즈니스 로직을 분리 최소한의 의존성만 가지고 있는 코드로 변경
-- 관심사를 분리하여 더 작은 단위의 테스트 코드 작성
+- 질문 서비스에서 꼭 필요한 영속 계층의 의존성만 남겨놓고 분리하였습니다.
+- 기능별 비즈니스 로직을 분리하고 본연에 역활과 책임만 가지도록 변경하였습니다.
+- 이벤트 리스너를 활용하여 필요한 기능들을 호출하였습니다.
+- 더 작은 단위의 테스트 코드 작성하여 조금더 의미있는 테스트를 작성하였습니다.
 
 ```java
 @Service
@@ -166,6 +165,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 ```   
 
+이벤트 리스너를 사용해 발행된 이벤트를 수신
 ```java
 @Component
 @Slf4j
@@ -191,13 +191,12 @@ public class QuestionCreateEventListener {
 
     private MemberRecordRequest createRecordDto(Long memberId, Long questionId) {
         final String description = "memberId: " + memberId + ", " + "questionId: " + questionId;
-    
         return new MemberRecordRequest(ActionStatus.CREATE_QUESTION, memberId, null, description, LocalDateTime.now());
     }
 }
 
 ```
-
+- 각 기능에 역활과 책임에 맞는 서비스레이어 작성
 ```java
 @Service
 @Slf4j
@@ -212,7 +211,7 @@ public class QuestionTagServiceImpl implements QuestionTagService {
     @Transactional
     public void createQuestionTag(Long questionId, List<String> tags) {
         log.info("질문 태그 생성 시작 - QuestionId: {}, Requested Tag name: {}", questionId, tags.toArray());
-        ....
+        .... Business Code
     }
 }
 
@@ -229,24 +228,13 @@ public class QuestionImageServiceImpl implements QuestionImageService {
     @Transactional
     public void changeTemporaryToSaved(Long questionId,List<Long> imageIds) {
         log.info("질문 게시판 임시 이미지 저장완료로 변경");
-
-        List<QuestionImage> images = questionImageRepository.findAllById(imageIds);
-
-        if (!images.isEmpty()) {
-
-            Question question = questionRepository.findById(questionId).orElseThrow(() -> CustomRuntimeException.createWithApiResponseStatus(ApiResponseStatus.NOT_FOUND_QUESTION));
-
-            images.forEach(image -> {
-                log.info("이미지 id:{}, storedName: {} 저장완료로 변경", image.getId(), image.getStoredFileName());
-                image.changeTemporaryToSaved(question);
-            });
-        }
+       .... Business Code
     }
 ```
 
 
 ## 6. 결과 관찰
-
+- 세분화된 테스트 작성
 ```java
 @ExtendWith(MockitoExtension.class)
 class CreateQuestionProcessingTest extends QuestionServiceTestBase {
@@ -347,5 +335,11 @@ class CreateQuestionProcessingTest extends QuestionServiceTestBase {
 ```
 
 7. 깃허브 위치
+[QuestionService Code](https://github.com/ImBoriPapa/bad-request/blob/main/src/main/java/com/study/badrequest/service/question/QuestionServiceImpl.java)
+[EventListener Code](https://github.com/ImBoriPapa/bad-request/tree/main/src/main/java/com/study/badrequest/event/question)
 
 참고
+> CleanCode - Robert C. Martin : 10장 클래스
+
+> https://mangkyu.tistory.com/292
+
