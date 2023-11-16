@@ -62,4 +62,7 @@ public class LinearSearch {
     }
 }
 ```
+
+## source code
+https://github.com/ImBoriPapa/dataStructuresAndAlgorithmsUsingJava/blob/main/datastructures/step_01_linearSearch/LinearSearch.java
   
